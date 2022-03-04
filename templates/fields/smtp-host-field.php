@@ -1,0 +1,1 @@
+<input type="text" name="smtp_host" id="smtp_host" value="<?=$host; ?>" class="regular-text" />

@@ -1,0 +1,1 @@
+<input type="text" name="smtp_port" id="smtp_port" value="<?= $port; ?>" class="regular-text" />

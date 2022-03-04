@@ -1,0 +1,1 @@
+<input type="password" name="smtp_password" id="smtp_password" value="<?= $password; ?>" class="regular-text" />
