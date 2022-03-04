@@ -22,7 +22,7 @@ class SMTPSimple
     public string $username;
     public string $password;
 
-    public function __construct(/*array $options*/)
+    public function __construct()
     {
         $this->host = get_option("smtp_simple_host") ?? "";
         $this->port = get_option("smtp_simple_port") ?? 2525;
@@ -56,66 +56,59 @@ class SMTPSimple
 
     public function register_settings()
     {
-        register_setting("smtp-simple-settings-group", "smtp_simple_host", array($this, "validate_host"));
-        register_setting("smtp-simple-settings-group", "smtp_simple_port", array($this, "validate_port"));
-        register_setting("smtp-simple-settings-group", "smtp_simple_username", array($this, "validate_username"));
-        register_setting("smtp-simple-settings-group", "smtp_simple_password", array($this, "validate_password"));
+        register_setting("smtp-simple-settings-group", "smtp_simple_host", function() {
+            return $this->validate_field("smtp_host");
+        });
+        register_setting("smtp-simple-settings-group", "smtp_simple_port", function() {
+            return $this->validate_field("smtp_port");
+        });
+        register_setting("smtp-simple-settings-group", "smtp_simple_username", function() {
+            return $this->validate_field("smtp_username");
+        });
+        register_setting("smtp-simple-settings-group", "smtp_simple_password", function() {
+            return $this->validate_field("smtp_password");
+        });
 
         add_settings_section("smtp-simple-settings-section", "SMTP Settings", array($this, "render_settings_section"), "smtp-simple-settings-admin");
-        add_settings_field("smtp-simple-host-field", "SMTP Host", array($this, "render_host_field"), "smtp-simple-settings-admin", "smtp-simple-settings-section");
-        add_settings_field("smtp-simple-port-field", "SMTP Port", array($this, "render_port_field"), "smtp-simple-settings-admin", "smtp-simple-settings-section");
-        add_settings_field("smtp-simple-username-field", "SMTP Username", array($this, "render_username_field"), "smtp-simple-settings-admin", "smtp-simple-settings-section");
-        add_settings_field("smtp-simple-password-field", "SMTP Password", array($this, "render_password_field"), "smtp-simple-settings-admin", "smtp-simple-settings-section");
+        add_settings_field("smtp-simple-host-field", "SMTP Host", function() {
+            $this->render_field("smtp_simple_host");
+        }, "smtp-simple-settings-admin", "smtp-simple-settings-section");
+        add_settings_field("smtp-simple-port-field", "SMTP Port", function() {
+            $this->render_field("smtp_simple_port");
+        }, "smtp-simple-settings-admin", "smtp-simple-settings-section");
+        add_settings_field("smtp-simple-username-field", "SMTP Username", function() {
+            $this->render_field("smtp_simple_username");
+        }, "smtp-simple-settings-admin", "smtp-simple-settings-section");
+        add_settings_field("smtp-simple-password-field", "SMTP Password", function () {
+            $this->render_field("smtp_simple_password");
+        }, "smtp-simple-settings-admin", "smtp-simple-settings-section");
     }
 
-    public function validate_host(): string
+    public function validate_field(string $field_name)
     {
-        return sanitize_text_field($_POST["smtp_host"]);
-    }
+        if (isset($_POST[$field_name])) {
+            if ($field_name === "smtp_port") {
+                return filter_var($_POST[$field_name], FILTER_VALIDATE_INT);
+            }
 
-    public function validate_port(): int
-    {
-        return intval($_POST["smtp_port"]);
-    }
-
-    public function validate_username(): string
-    {
-        return sanitize_text_field($_POST["smtp_username"]);
-    }
-
-    public function validate_password(): string
-    {
-        return sanitize_text_field($_POST["smtp_password"]);
+            return filter_var($_POST[$field_name], FILTER_SANITIZE_STRING);
+        } else {
+            return "";
+        }
     }
 
     public function render_settings_section()
     {
-        include plugin_dir_path(__FILE__) . "/templates/sections/smtp-settings-section.php";
+        include plugin_dir_path(__FILE__) . "/templates/sections/smtp-settings-section.html";
     }
 
-    public function render_host_field()
+    public function render_field(string $field_name)
     {
-        $host = get_option("smtp_simple_host");
-        include plugin_dir_path(__FILE__) . "/templates/fields/smtp-host-field.php";
-    }
-
-    public function render_port_field()
-    {
-        $port = get_option("smtp_simple_port");
-        include plugin_dir_path(__FILE__) . "/templates/fields/smtp-port-field.php";
-    }
-
-    public function render_username_field()
-    {
-        $username = get_option("smtp_simple_username");
-        include plugin_dir_path(__FILE__) . "/templates/fields/smtp-username-field.php";
-    }
-
-    public function render_password_field()
-    {
-        $password = get_option("smtp_simple_password");
-        include plugin_dir_path(__FILE__) . "/templates/fields/smtp-password-field.php";
+        $field_value = explode("_", $field_name);
+        $field_value = end($field_value);
+        $$field_value = get_option($field_name);
+        include plugin_dir_path(__FILE__) . "/templates/fields/smtp-" . $field_value . "-field.php";
     }
 }
 
-$SMTPSimple = new SMTPSimple();
+new SMTPSimple();
